@@ -1,0 +1,25 @@
+<script type="module">
+	import init, {encrypt} from "./pkg/rob.js";
+
+	init().then(() => {
+		async function run() {
+			const [fileHandle] = await window.showOpenFilePicker();
+			const file = await fileHandle.getFile();
+			var contents = new Uint8Array(await file.arrayBuffer());
+
+			console.log("content: ", contents);
+			let encrypted = encrypt(contents);
+			console.log("encrypted:", encrypted);
+
+			const writable = await fileHandle.createWritable();
+			await writable.write(encrypted);
+			await writable.close();
+		}
+
+		window.run = run;
+
+		document.getElementById("button").setAttribute("onClick", "window.run()");
+	});
+</script>
+
+<button id="button">run</button>
