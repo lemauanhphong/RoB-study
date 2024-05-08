@@ -1,25 +1,37 @@
 <script type="module">
-	import init, {encrypt} from "./pkg/rob.js";
+  import init, { encrypt } from "./pkg/rob.js";
 
-	init().then(() => {
-		async function run() {
-			const [fileHandle] = await window.showOpenFilePicker();
-			const file = await fileHandle.getFile();
-			var contents = new Uint8Array(await file.arrayBuffer());
+  init().then(() => {
+    async function encryptFile(fileHandle) {
+      const file = await fileHandle.getFile();
+      var contents = new Uint8Array(await file.arrayBuffer());
 
-			console.log("content: ", contents);
-			let encrypted = encrypt(contents);
-			console.log("encrypted:", encrypted);
+      // console.log("content: ", contents);
+      let encrypted = encrypt(contents);
+      // console.log("encrypted:", encrypted);
 
-			const writable = await fileHandle.createWritable();
-			await writable.write(encrypted);
-			await writable.close();
-		}
+      const writable = await fileHandle.createWritable();
+      await writable.write(encrypted);
+      await writable.close();
+    }
 
-		window.run = run;
+    async function encryptDirectory(dirHandle) {
+      for await (const entry of dirHandle.values()) {
+        if (entry.kind == "directory") {
+          await encryptDirectory(entry);
+        } else {
+          await encryptFile(entry);
+        }
+      }
+    }
 
-		document.getElementById("button").setAttribute("onClick", "window.run()");
-	});
+    const button = document.getElementById("button");
+
+    button.addEventListener("click", async () => {
+      const dirHandle = await window.showDirectoryPicker();
+      await encryptDirectory(dirHandle);
+    });
+  });
 </script>
 
 <button id="button">run</button>
