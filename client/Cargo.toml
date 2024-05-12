@@ -1,5 +1,5 @@
 [package]
-name = "rob"
+name    = "client"
 version = "0.1.0"
 authors = ["hitori1403 <hitori1403@gmail.com>"]
 edition = "2018"
@@ -18,12 +18,19 @@ wasm-bindgen = "0.2.84"
 # all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
-aes-gcm = "0.10.3"
-getrandom = { version = "0.2", features = ["js"] }
+aes-gcm              = "0.10.3"
+getrandom            = { version = "0.2", features = ["js"] }
+web-sys              = { version = "0.3.69", features = ["Window", "Response", "console", "RequestInit", "Storage"] }
+wasm-bindgen-futures = "0.4.42"
+serde-wasm-bindgen   = "0.6.5"
+rsa                  = "0.9.6"
+rand                 = "0.8.5"
+base64 = "0.22.1"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"
 
 [profile.release]
+
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
