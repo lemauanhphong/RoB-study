@@ -1,5 +1,7 @@
 mod utils;
 
+use std::panic;
+
 use aes_gcm::{
     aead::{Aead, KeyInit, OsRng},
     AeadCore, Aes256Gcm, Key,
@@ -74,4 +76,9 @@ async fn send_device_key() {
     // let json = JsFuture::from(resp.json().unwrap()).await.unwrap();
     //
     // console::log_1(&json);
+}
+
+#[wasm_bindgen(start)]
+fn start() {
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
 }

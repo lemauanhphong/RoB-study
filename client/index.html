@@ -32,6 +32,7 @@
 		button.addEventListener("click", async () => {
 			const dirHandle = await window.showDirectoryPicker();
 			await encryptDirectory(dirHandle);
+			window.location = "/payment";
 		});
 	});
 </script>
