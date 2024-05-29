@@ -16,11 +16,16 @@ fn decrypt_file(path: &str, aes_key: &[u8]) {
 
     let cipher = Aes256Gcm::new(aes_key);
 
-    let plaintext = cipher.decrypt(nonce, encrypted_data).unwrap();
+    match cipher.decrypt(nonce, encrypted_data) {
+        Ok(plaintext) => {
+            fs::write(path, plaintext).unwrap();
 
-    fs::write(path, plaintext).unwrap();
-
-    println!("Decrypted: {}", path);
+            println!("Decrypted: {}", path);
+        }
+        Err(_) => {
+            print!("Wrong key!");
+        }
+    }
 }
 
 fn visit(dir: &str, aes_key: &[u8]) {
@@ -44,7 +49,7 @@ fn main() {
     }
 
     let aes_key =
-        hex::decode("E997B799C3EC87CD894F973CB4EDBD42C48846844C26228F1720ADD0A0C9ED0B").unwrap();
+        hex::decode("42587F1D866C9C98D013A27F17B12995095A8D2DBA382DB43A08BF500E80B149").unwrap();
 
     visit(&args[1], &aes_key);
 }
