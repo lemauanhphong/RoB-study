@@ -5,5 +5,4 @@ edition = "2021"
 
 [dependencies]
 aes-gcm = "0.10.3"
-base64 = "0.22.1"
-rsa = "0.9.6"
+hex = "0.4.3"
