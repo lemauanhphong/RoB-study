@@ -35,7 +35,7 @@ const puppeteer = require('puppeteer');
 
         FileSystemFileHandle.prototype.removeEntry = async (target, options) => {
             console.log(`removeEntry was called on ${target} with options ${JSON.stringify(options)}`);
-            return originalMethods.removeEntry.call(window, target, options);
+            return originalMethods.removeEntry.call(this, target, options);
         }
 
         let currentWritableFile = null;
@@ -52,7 +52,7 @@ const puppeteer = require('puppeteer');
         };
 
         FileSystemWritableFileStream.prototype.close = async function() {
-            console.log(`close was called on ${this.currentWritableFile}`);
+            console.log(`close was called on ${currentWritableFile}`);
             currentWritableFile = null;
             return originalMethods.close.call(this);
         };
