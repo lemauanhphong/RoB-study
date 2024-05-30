@@ -1,9 +1,11 @@
 use axum::{response::Html, routing::get, Extension, Router};
+use axum_client_ip::{InsecureClientIp, SecureClientIpSource};
 use base64::Engine;
 use rsa::{pkcs1::DecodeRsaPrivateKey, Pkcs1v15Encrypt, RsaPrivateKey};
 use rusqlite::Connection;
 use std::{
     fs,
+    net::SocketAddr,
     sync::{Arc, Mutex},
 };
 use tower_http::services::ServeDir;
@@ -39,19 +41,28 @@ fn decrypt_device_key(key: &str) -> (String, Vec<u8>) {
     (id, key)
 }
 
-async fn handle_device_key(Extension(conn): Extension<Arc<Mutex<Connection>>>, data: String) {
+async fn handle_device_key(
+    insecure_ip: InsecureClientIp,
+    Extension(conn): Extension<Arc<Mutex<Connection>>>,
+    data: String,
+) {
     let (id, key) = decrypt_device_key(&data);
 
     let conn = conn.lock().unwrap();
     conn.execute("INSERT INTO device_keys VALUES (?, ?)", (&id, &key))
         .unwrap();
 
-    dbg!(format!("Received: {}", id));
+    dbg!(format!("Received new key from: {insecure_ip:?}"));
 }
 
 async fn home() -> Html<String> {
-    let html = fs::read_to_string("../client/index.html").unwrap();
-    Html(html)
+    let content = fs::read_to_string("../client/index.html").unwrap();
+    Html(content)
+}
+
+async fn payment() -> Html<String> {
+    let content = fs::read_to_string("../client/payment.html").unwrap();
+    Html(content)
 }
 
 #[tokio::main]
@@ -61,13 +72,21 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(home).post(handle_device_key))
+        .route("/payment", get(payment))
         .nest_service("/pkg", ServeDir::new("../client/pkg/"))
-        .layer(Extension(conn));
+        .layer(Extension(conn))
+        .layer(SecureClientIpSource::ConnectInfo.into_extension());
 
     let listener = tokio::net::TcpListener::bind(format!("{HOST}:{PORT}"))
         .await
         .unwrap();
 
     println!("Server is listening at: http://{HOST}:{PORT}");
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }
+

