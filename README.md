@@ -1,7 +1,7 @@
 # RoB
 Implementation of RøB: Ransomware over Modern Web Browsers
 
-## Disclamer
+## Discliamer
 ```
 ## The scripts are provided AS IS without warranty of any kind.
 
